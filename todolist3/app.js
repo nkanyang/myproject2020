@@ -3,6 +3,7 @@ const todoInput = document.querySelector(".todo__input");
 const todoButton = document.querySelector(".todo__button");
 const todoList = document.querySelector(".todo__list");
 const todoFilter = document.querySelector(".todo__filter");
+var todos = [];
 
 //Event Listeners
 window.addEventListener("DOMContentLoaded",loadTodos);
@@ -16,6 +17,10 @@ function addTodo(event){
   //Prevent form from submitting
   event.preventDefault();
   // todo div
+  if(todoInput.value === ""){
+    alert("Todo item can not be null!");
+    return;
+  }
   const todoDiv = document.createElement("div");
   todoDiv.classList.add("todo__div");
 
@@ -31,7 +36,8 @@ function addTodo(event){
   newTodo.classList.add("todo__item");
   todoDiv.appendChild(newTodo);
 
-  saveLocal(todoInput.value);
+  //save to local storage
+  saveLocal(todoInput.value,false);
 
   //delete button 
   const deleteBtn = document.createElement("button");
@@ -42,7 +48,6 @@ function addTodo(event){
   //append to list
   todoList.appendChild(todoDiv);
   todoInput.value = "";
-
 }
 
 function deleteToggle(event){
@@ -51,7 +56,6 @@ function deleteToggle(event){
     const todoDiv = item.parentElement;
     todoDiv.classList.add("todo__div--fall");
     let todo = todoDiv.children[1].innerText;
-    console.log(todo);
     removeLocal(todo);
     todoDiv.addEventListener("transitionend",()=>todoDiv.remove());
   }
@@ -59,6 +63,8 @@ function deleteToggle(event){
   if(item.classList[0] === "todo__togglebtn"){
     const todoDiv = item.parentElement;
     todoDiv.classList.toggle("todo__div--completed");
+    let todo = todoDiv.children[1].innerText;
+    updateLocal(todo);
   }
 }
 
@@ -92,42 +98,40 @@ function onFilter(event){
   }
 }
 
-function saveLocal(todo){
-  let todos;
-  if(localStorage.getItem("todolist") === null){
-    todos=[];
-  }else{
-    todos = JSON.parse(localStorage.getItem("todolist"));
-  }
-  todos.push(todo);
+function saveLocal(todo,done){
+  todos.push({"task":todo,"isdone":done});
   localStorage.setItem("todolist",JSON.stringify(todos));
 }
 
 function removeLocal(todo){
-  let todos;
-  if(localStorage.getItem("todolist") === null){
-    todos=[];
-  }else{
-    todos = JSON.parse(localStorage.getItem("todolist"));
-  }
-
   //delete string todo in the todolist
-  let index = todos.indexOf(todo);
+  let index;
+  for(let i=0;i<todos.length;i++){
+    if(todos[i]["task"] === todo)
+      index = i;
+  }
   todos.splice(index,1);
-
   localStorage.setItem("todolist",JSON.stringify(todos));
 }
 
+function updateLocal(task){
+
+  todos.forEach((todo)=>{
+    if(todo["task"] === task){
+      todo["isdone"] = !todo["isdone"];
+      localStorage.setItem("todolist",JSON.stringify(todos));
+      return;
+    }
+  });
+}
+
 function loadTodos(){
-  console.log("load todolist")
-  let todos;
-  if(localStorage.getItem("todolist") === null){
-    todos=[];
-  }else{
-    console.log("load todolist");
+  //load the list if exists
+  if(localStorage.getItem("todolist")){
     todos = JSON.parse(localStorage.getItem("todolist"));
   }
-  todos.forEach((todo)=>{
+  //display the list
+  todos.forEach(({task,isdone})=>{
     const todoDiv = document.createElement("div");
     todoDiv.classList.add("todo__div");
   
@@ -139,7 +143,7 @@ function loadTodos(){
   
     //create li
     const newTodo = document.createElement("li");
-    newTodo.innerText = todo;
+    newTodo.innerText = task;
     newTodo.classList.add("todo__item");
     todoDiv.appendChild(newTodo);
   
@@ -147,6 +151,10 @@ function loadTodos(){
     const deleteBtn = document.createElement("button");
     deleteBtn.innerHTML = "<i class='fas fa-trash'></i>";
     deleteBtn.classList.add("todo__deletebtn");
+
+    if(isdone){
+      todoDiv.classList.toggle("todo__div--completed");
+    };
     todoDiv.appendChild(deleteBtn);
   
     //append to list
